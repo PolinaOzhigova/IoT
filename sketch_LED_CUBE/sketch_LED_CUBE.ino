@@ -26,17 +26,20 @@ void setup() {
     pinMode(groundpins[i], OUTPUT); 
   }
 
+  turnOff();
+
   Serial.begin(9600);
-  Serial.println("Input any LEDs from 1 to 8 in any combination");
+  Serial.println("Input any LEDs from 1 to 8 in any combination. s to STOP");
 }
 
 void loop() {
   if (Serial.available() > 0) {
     currentInput = Serial.readStringUntil('\n');
+    Serial.println(currentInput);
   }
 
   unsigned long currentMillis = millis();
-  if (currentMillis - lastMillis >= 100) {
+  if (currentMillis - lastMillis >= 0,1) {
     lastMillis = currentMillis;
     handleInput(currentInput);
   }
@@ -46,12 +49,22 @@ void handleInput(String input) {
   for (int i = 0; i < input.length(); i++) {
     char c = input.charAt(i);
     if (c >= '1' && c <= '8') {
-      int ledNumber = c - '1'; // Adjust to zero-index
+      int ledNumber = c - '1';
       turn_led_functions[ledNumber]();
-    } else {
-      Serial.println("Incorrect LED input. Enter LEDs from 1 to 8.");
-    }
+     }// else {
+      // Serial.println("Incorrect LED input. Enter LEDs from 1 to 8.");
+    // }
+      else if (c == 's'){
+        turnOff();
+      }
   }
+}
+
+void turnOff(){
+    for (int i = 0; i < 4; i++) {
+      digitalWrite(ledpins[i], HIGH);
+    }
+    for (int i = 0; i < 2; i++) { digitalWrite(groundpins[i], LOW); }
 }
 
 void turnFloorUP() {
@@ -63,49 +76,57 @@ void turnFloorDOWN() {
 }
 
 void turn_led_1() {
-  Serial.println("Turning LED 1");
+  // Serial.println("Turning LED 1");
   turnFloorUP();
   digitalWrite(ledpins[2], LOW);
+  turnOff();
 }
 
 void turn_led_2() {
-  Serial.println("Turning LED 2");
+  // Serial.println("Turning LED 2");
   turnFloorUP();
   digitalWrite(ledpins[0], LOW);
+  turnOff();
 }
 
 void turn_led_3() {
-  Serial.println("Turning LED 3");
+  // Serial.println("Turning LED 3");
   turnFloorUP();
   digitalWrite(ledpins[1], LOW);
+  turnOff();
 }
 
 void turn_led_4() {
-  Serial.println("Turning LED 4");
+  // Serial.println("Turning LED 4");
   turnFloorUP();
   digitalWrite(ledpins[3], LOW);
+  turnOff();
 }
 
 void turn_led_5() {
-  Serial.println("Turning LED 5");
+  // Serial.println("Turning LED 5");
   turnFloorDOWN();
   digitalWrite(ledpins[2], LOW);
+  turnOff();
 }
 
 void turn_led_6() {
-  Serial.println("Turning LED 6");
+  // Serial.println("Turning LED 6");
   turnFloorDOWN();
   digitalWrite(ledpins[0], LOW);
+  turnOff();
 }
 
 void turn_led_7() {
-  Serial.println("Turning LED 7");
+  // Serial.println("Turning LED 7");
   turnFloorDOWN();
   digitalWrite(ledpins[1], LOW);
+  turnOff();
 }
 
 void turn_led_8() {
-  Serial.println("Turning LED 8");
+  // Serial.println("Turning LED 8");
   turnFloorDOWN();
   digitalWrite(ledpins[3], LOW);
+  turnOff();
 }

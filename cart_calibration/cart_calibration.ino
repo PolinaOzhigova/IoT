@@ -16,6 +16,7 @@
 #define PAUSE_CMD 'P'
 #define SAVE_CMD 'S'
 #define CHANGE_CMD 'C'
+#define SPEED_CMD 'X'
 
 #define FORWARD_CMD 'F'
 #define BACKWARD_CMD 'B'
