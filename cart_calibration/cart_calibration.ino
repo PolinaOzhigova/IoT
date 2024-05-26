@@ -118,7 +118,7 @@ bool handleCommand(char command){
   if (command == PAUSE_CMD){
     Serial.println("Pause!");
     stop();
-    rotationAuto == false;
+    rotationAuto = false;
     return true;
   }
 

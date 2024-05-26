@@ -1,85 +1,72 @@
-#define SPEED_1      5 
-#define DIR_1        4 
-#define SPEED_2      6 
-#define DIR_2        7 
+#include <SoftwareSerial.h>
 
-int period = 1000; 
-unsigned long time_now = 0;
+// Пины D1 и D2 для соединения с датчиком SDS011
+int rxPin = D1;
+int txPin = D2;
+
+// Объект для чтения данных с датчика SDS011
+SoftwareSerial sds(rxPin, txPin);
 
 void setup() {
-  for (int i = 4; i < 8; i++) {     
-    pinMode(i, OUTPUT);
-  }
-} 
-void move_forward(int car_speed) {
-  digitalWrite(DIR_1, HIGH);  
-  digitalWrite(DIR_2, HIGH);
-  analogWrite(SPEED_1, car_speed);  
-  analogWrite(SPEED_2, car_speed);
+  Serial.begin(9600); // Начать Serial для вывода данных в монитор порта
+  sds.begin(9600); // Начать соединение с датчиком SDS011
 }
-
-void move_back(int car_speed) {
-  digitalWrite(DIR_1, LOW);  
-  digitalWrite(DIR_2, LOW);
-  analogWrite(SPEED_1, car_speed);  
-  analogWrite(SPEED_2, car_speed);
-}
-
-void rotate_left(int car_speed) {
-  digitalWrite(DIR_1, LOW);  
-  digitalWrite(DIR_2, LOW);
-  analogWrite(SPEED_1, car_speed);  
-  analogWrite(SPEED_2, car_speed);
-}
-
-void rotate_right(int car_speed) {
-  digitalWrite(DIR_1, HIGH);  
-  digitalWrite(DIR_2, HIGH);
-  analogWrite(SPEED_1, car_speed);  
-  analogWrite(SPEED_2, car_speed);
-}
-
-void stop(){
-  analogWrite(SPEED_1, 0);  
-  analogWrite(SPEED_2, 0);
-}
-
-void turn_left(int car_speed, float steepness) {
-  if(steepness > 1) {
-    steepness = 1;
-  }
-    if(steepness < 0) {
-    steepness = 0;
-  }
-  digitalWrite(DIR_1, HIGH);  
-  digitalWrite(DIR_2, LOW);
-  analogWrite(SPEED_1, car_speed);  
-  analogWrite(SPEED_2, car_speed * steepness);
-}
-
-void turn_right(int car_speed, float steepness) {
-  if(steepness > 1) {
-    steepness = 1;
-  }
-    if(steepness < 0) {
-    steepness = 0;
-  }
-  digitalWrite(DIR_1, LOW);  
-  digitalWrite(DIR_2, HIGH);
-  analogWrite(SPEED_1, car_speed * steepness);  
-  analogWrite(SPEED_2, car_speed);
-}
-
- 
 
 void loop() {
-  time_now = millis();
-  while(millis() < time_now + period){
-    move_forward(100);
-  }
-  time_now = millis();
-   while(millis() < time_now + period){
-    turn_right(100, 4.0);
+  // Чтение данных с датчика
+  if (sds.available() >= 10) {
+    // Прочитать байты данных
+    uint8_t buf[10];
+    sds.readBytes(buf, 10);
+
+    // Проверка, успешно ли было чтение данных
+    if (buf[0] == 0xAA && buf[1] == 0xC0) {
+      // Извлечь значения PM2.5 и PM10 из буфера
+      uint16_t pm25 = (buf[3] * 256 + buf[2])/10; // PM2.5 значение
+      uint16_t pm10 = (buf[5] * 256 + buf[4])/10; // PM10 значение
+
+      // Вывод текущего времени
+      printTime();
+
+      // Вывод данных о PM2.5 и PM10 в монитор порта
+      Serial.print("PM2.5: ");
+      Serial.print(pm25);
+      Serial.print(" ug/m3\tPM10: ");
+      Serial.print(pm10);
+      Serial.println(" ug/m3");
+    }
   }
 
+  delay(1000); // Подождать 1 секунду перед повторной итерацией
+}
+
+// Функция для вывода текущего времени в монитор порта
+void printTime() {
+  // Получение текущего времени
+  unsigned long currentMillis = millis();
+  unsigned long seconds = currentMillis / 1000;
+  unsigned long minutes = seconds / 60;
+  unsigned long hours = minutes / 60;
+
+  // Преобразование времени в часы, минуты и секунды
+  hours = hours % 24;
+  minutes = minutes % 60;
+  seconds = seconds % 60;
+
+  // Вывод времени в монитор порта
+  if (hours < 10) {
+    Serial.print("0");
+  }
+  Serial.print(hours);
+  Serial.print(":");
+  if (minutes < 10) {
+    Serial.print("0");
+  }
+  Serial.print(minutes);
+  Serial.print(":");
+  if (seconds < 10) {
+    Serial.print("0");
+  }
+  Serial.print(seconds);
+  Serial.print(" ");
 }
