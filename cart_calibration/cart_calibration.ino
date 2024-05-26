@@ -14,6 +14,7 @@
 #define SAVE_CMD 'S'
 #define CHANGE_CMD 'C'
 #define SPEED_CMD 'X'
+#define ROTATION_CMD 'T'
 
 #define FORWARD_CMD 'F'
 #define BACKWARD_CMD 'B'
@@ -41,6 +42,8 @@ char commands[] = {FORWARD_CMD, BACKWARD_CMD, ROTATE_LEFT_CMD, ROTATE_RIGHT_CMD}
 bool anyConfigured = false;
 bool fullyConfigured = false;
 bool speedConf = false;
+bool rotationAuto = false;
+bool wasCalibrationRotation = false;
 
 bool confRight = false;
 bool confLeft = false;
@@ -50,10 +53,17 @@ bool confBot = false;
 int leftWheelSpeed = CAR_SPEED;
 int rightWheelSpeed = CAR_SPEED;
 
+unsigned long rotationStartTime;
+unsigned long rotationTimes[4] = {0, 0, 0, 0};
+int rotationCount = 0;
+
+char currentRotationDirection = 'P';
+
 enum CalibrationState {
     NOT_CALIBRATING,
     CALIBRATING_LEFT_WHEEL,
-    CALIBRATING_RIGHT_WHEEL
+    CALIBRATING_RIGHT_WHEEL,
+    CALIBRATING_ROTATION
 };
 
 CalibrationState calibrationState = NOT_CALIBRATING;
@@ -63,6 +73,10 @@ void moveCart(bool dirFirstState, bool dirSecondState){
   digitalWrite(DIR_2, dirSecondState);
   analogWrite(SPEED_1, leftWheelSpeed);
   analogWrite(SPEED_2, rightWheelSpeed);
+}
+
+void moveCartByIndex(int index){
+  moveCart(states[index][0], states[index][1]);
 }
 
 void setup() {
@@ -102,16 +116,30 @@ bool handleCommand(char command){
     return true;
   }
   if (command == PAUSE_CMD){
-    Serial.println("Calibration has been paused!");
+    Serial.println("Pause!");
     stop();
+    rotationAuto == false;
     return true;
   }
 
-  if (fullyConfigured && isMovementCommand(command) && !speedConf){
-        int index = indexOfCommand(command);
-        int dirIndex = resultsIndices[index];
-        moveCart(states[dirIndex][0], states[dirIndex][1]);
+  if (fullyConfigured && isMovementCommand(command) && !speedConf && calibrationState != CALIBRATING_ROTATION){
+    if (rotationAuto == true && (command == ROTATE_LEFT_CMD || command == ROTATE_RIGHT_CMD)){
+      while(rotationCount > 0){
+        moveCartByIndex(resultsIndices[indexOfCommand(command)]);
+        delay(rotationTimes[4 - rotationCount]);
+        stop();
+        delay(1000);
+        rotationCount--;
         return true;
+      }
+      rotationCount = 4;
+      rotationAuto = false;
+      return true;
+    }
+    int index = indexOfCommand(command);
+    int dirIndex = resultsIndices[index];
+    moveCart(states[dirIndex][0], states[dirIndex][1]);
+    return true;
   }
 
   if (command == SPEED_CMD) {
@@ -160,7 +188,40 @@ bool handleCommand(char command){
     return true;
   }
 
-  if (isCalibrating){
+  if (command == ROTATION_CMD) {
+    if(wasCalibrationRotation){
+      rotationAuto = true;
+      return true;
+    }
+    if (calibrationState != CALIBRATING_ROTATION) {
+      Serial.println("Calibrating rotation. Use T to mark 90-degree increments.");
+      calibrationState = CALIBRATING_ROTATION;
+      rotationStartTime = millis();
+      currentRotationDirection = (movementCommand == ROTATE_RIGHT_CMD || movementCommand == ROTATE_LEFT_CMD) ? movementCommand : ROTATE_RIGHT_CMD;  // Определяем направление поворота
+      moveCartByIndex(resultsIndices[indexOfCommand(currentRotationDirection)]);
+    } else {
+      unsigned long rotationEndTime = millis();
+      rotationTimes[rotationCount] = rotationEndTime - rotationStartTime;
+      rotationCount++;
+      rotationStartTime = millis();
+      Serial.print("Time for ");
+      Serial.print(rotationCount * 90);
+      Serial.print("-degree rotation saved: ");
+      Serial.println(rotationTimes[rotationCount - 1]);
+      
+      if (rotationCount >= 4) {
+        Serial.println("Rotation calibration completed.");
+        calibrationState = NOT_CALIBRATING;
+        wasCalibrationRotation = true;
+        stop();
+      } else {
+        moveCartByIndex(resultsIndices[indexOfCommand(currentRotationDirection)]);
+      }
+    }
+    return true;
+  }
+
+  if (isCalibrating && calibrationState != CALIBRATING_ROTATION){
 
     if (isMovementCommand(command)){
       movementCommand = command; 
