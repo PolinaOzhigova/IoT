@@ -1,10 +1,11 @@
-#include <WiFi.h>
-#include <HTTPClient.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClient.h>
 #include <ArduinoJson.h>
 
 const char* ssid = "DIR-615_61";
 const char* password = "02984100";
-const char* serverName = "http://127.0.0.1:8005/temperature?location=your_location";
+const char* serverName = "http://192.168.0.59:8005/temperature?location=test";
 
 void setup() {
   Serial.begin(115200);
@@ -19,10 +20,11 @@ void setup() {
 }
 
 void loop() {
-  if ((WiFi.status() == WL_CONNECTED)) {
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
     HTTPClient http;
 
-    http.begin(serverName);
+    http.begin(client, serverName);
     int httpResponseCode = http.GET();
 
     if (httpResponseCode > 0) {
