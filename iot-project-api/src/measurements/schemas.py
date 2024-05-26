@@ -1,10 +1,12 @@
-# content of measurements/schemas.py
 from datetime import datetime
 from pydantic import BaseModel
 
-class Measurement(BaseModel):
-    pm25: float
-    pm10: float
+class TemperatureValue(BaseModel):
+    value: float 
     location: str
     device_id: str
     timestamp: datetime
+
+class TemperatureResponse(BaseModel):
+    values: list[float]
+    location: str
